@@ -1,21 +1,21 @@
 import React from 'react';
 import {createAppContainer} from 'react-navigation';
 import {createBottomTabNavigator} from 'react-navigation-tabs';
-// import {createStackNavigator} from 'react-navigation-stack';
+import {createStackNavigator} from 'react-navigation-stack';
 
-import Home from '../pages/Home/index';
+import Movie from '../pages/Movie/index';
 import Cinema from '../pages/Cinema/index';
 import Mine from '../pages/Mine/index';
 import Icon from '../components/Icon.js';
-import TabBar from '../components/TabBar.js';
+import Detail from '../pages/Movie/components/detail.js';
 
 // 创建底部路由
-const SketchRouter = createBottomTabNavigator(
+const BaseRouter = createBottomTabNavigator(
   {
-    Home: {
-      screen: Home,
+    Movie: {
+      screen: Movie,
       navigationOptions: {
-        tabBarIcon: ({tintColor}) => <Icon name="home" color={tintColor} />,
+        tabBarIcon: ({tintColor}) => <Icon name="movie" color={tintColor} />,
       },
     },
     Cinema: {
@@ -32,24 +32,28 @@ const SketchRouter = createBottomTabNavigator(
     },
   },
   {
-    initialRouteName: 'Home',
-    // tabBarComponent: TabBar, //自定义tab组件
+    initialRouteName: 'Movie',
     tabBarOptions: {
       activeTintColor: '#f03d37',
       inactiveTintColor: '#696969',
     },
   },
 );
-// 创建跳转路由
-// const SketchRouter = createStackNavigator(
-//   {
-//     Home,
-//     Cinema,
-//   },
+// 创建跳转路由;
+const SketchRouter = createStackNavigator(
+  {
+    BaseNavigator: {
+      screen: BaseRouter,
+      navigationOptions: {
+        header: null,
+      },
+    },
+    Detail,
+  },
 
-//   {
-//     headerBackTitleVisible: false,
-//   },
-// );
+  {
+    headerBackTitleVisible: false,
+  },
+);
 
 export default createAppContainer(SketchRouter);

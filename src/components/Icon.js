@@ -2,14 +2,17 @@ import React from 'react';
 import {Text} from 'react-native';
 
 const iconMap = {
-  home: '♡',
+  movie: '♡',
   cinema: '♢',
   mine: '♧',
 };
-const Icon = ({name, color, style, ...props}) => {
+const Icon = ({name, color, style}) => {
   const icon = iconMap[name];
-
-  return <Text style={[{fontSize: 26, color}, style]}>{icon}</Text>;
+  const iconStyle = {
+    fontSize: 26,
+    color,
+  };
+  return <Text style={[iconStyle, style]}>{icon}</Text>;
 };
 
 export default Icon;

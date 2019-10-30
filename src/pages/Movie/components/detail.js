@@ -1,29 +1,43 @@
 import React from 'react';
 import {Text, StyleSheet, StatusBar, View, FlatList} from 'react-native';
 import {SafeAreaView} from 'react-navigation';
-import HomeAPI from '../../config/home.js';
-export default class Home extends React.Component {
+import MovieAPI from '../../../api/movie.js';
+const rightStyle = {
+  height: 44,
+  width: 55,
+  justifyContent: 'center',
+  paddingRight: 15,
+};
+export default class Detail extends React.Component {
   static navigationOptions = {
-    title: '电影',
+    // title: this.props.navigation.state.params.title,
+    title: '详情',
+    headerTitleStyle: {
+      flex: 1,
+      textAlign: 'center',
+    },
+    headerStyle: {backgroundColor: '#e54847'},
+    headerTintColor: '#fff',
+    headerRight: <View style={rightStyle} />,
   };
   constructor(props) {
     super(props);
     this.state = {
       movieList: [],
-      total: 10,
     };
   }
   componentDidMount() {
     this.getMovieListAction();
   }
   async getMovieListAction() {
-    const res = await HomeAPI.getMovieOnInfoList({token: ''});
+    const res = await MovieAPI.getMovieOnInfoList({token: ''});
     this.setState({
       movieList: res.movieList,
       total: res.total,
     });
   }
   render() {
+    // const {movieList} = this.props.navigation.state.params;
     const {movieList} = this.state;
     return (
       <SafeAreaView style={styles.contaner}>
@@ -44,14 +58,9 @@ export default class Home extends React.Component {
   }
 }
 const styles = StyleSheet.create({
-  fontSizeType: {
-    fontSize: 18,
-  },
   contaner: {
     backgroundColor: '#fff',
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   test: {
     width: 150,

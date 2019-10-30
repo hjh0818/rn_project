@@ -1,6 +1,7 @@
 import React from 'react';
-import {Text, StyleSheet, StatusBar, View} from 'react-native';
+import {Text, StyleSheet, View} from 'react-native';
 import {SafeAreaView} from 'react-navigation';
+import Header from '../../components/header.js';
 
 export default class Mine extends React.Component {
   static navigationOptions = {
@@ -14,8 +15,8 @@ export default class Mine extends React.Component {
   render() {
     return (
       <SafeAreaView style={styles.contaner}>
-        <StatusBar barStyle="dark-content" />
         <View>
+          <Header name="我的" />
           <Text>我的</Text>
         </View>
       </SafeAreaView>
@@ -23,14 +24,9 @@ export default class Mine extends React.Component {
   }
 }
 const styles = StyleSheet.create({
-  fontSizeType: {
-    fontSize: 18,
-  },
   contaner: {
     backgroundColor: '#fff',
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   test: {
     width: 150,
