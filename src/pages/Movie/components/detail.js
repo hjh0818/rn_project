@@ -1,7 +1,6 @@
 import React from 'react';
 import {Text, StyleSheet, StatusBar, View, FlatList} from 'react-native';
 import {SafeAreaView} from 'react-navigation';
-import MovieAPI from '../../../api/movie.js';
 const rightStyle = {
   height: 44,
   width: 55,
@@ -10,7 +9,6 @@ const rightStyle = {
 };
 export default class Detail extends React.Component {
   static navigationOptions = {
-    // title: this.props.navigation.state.params.title,
     title: '详情',
     headerTitleStyle: {
       flex: 1,
@@ -22,23 +20,10 @@ export default class Detail extends React.Component {
   };
   constructor(props) {
     super(props);
-    this.state = {
-      movieList: [],
-    };
-  }
-  componentDidMount() {
-    this.getMovieListAction();
-  }
-  async getMovieListAction() {
-    const res = await MovieAPI.getMovieOnInfoList({token: ''});
-    this.setState({
-      movieList: res.movieList,
-      total: res.total,
-    });
+    this.state = {};
   }
   render() {
-    // const {movieList} = this.props.navigation.state.params;
-    const {movieList} = this.state;
+    const {movieList} = this.props.navigation.state.params;
     return (
       <SafeAreaView style={styles.contaner}>
         <StatusBar barStyle="dark-content" />
