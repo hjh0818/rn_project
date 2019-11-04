@@ -9,6 +9,8 @@ import Mine from '../pages/Mine/index';
 import Icon from '../components/Icon.js';
 import Detail from '../pages/Movie/components/detail.js';
 import DownLoad from '../pages/Movie/components/downLoad.js';
+import LocalCity from '../pages/Movie/components/localCity.js';
+import SearchMovie from '../pages/Movie/components/searchMovie.js';
 
 // 创建底部路由
 const BaseRouter = createBottomTabNavigator(
@@ -51,6 +53,8 @@ const SketchRouter = createStackNavigator(
     },
     Detail,
     DownLoad,
+    LocalCity,
+    SearchMovie,
   },
 
   {

@@ -7,9 +7,9 @@ const rightStyle = {
   justifyContent: 'center',
   paddingRight: 15,
 };
-export default class Detail extends React.Component {
+export default class SearchMovie extends React.Component {
   static navigationOptions = {
-    title: '电影详情',
+    title: '搜索电影',
     headerTitleStyle: {
       flex: 1,
       textAlign: 'center',
@@ -23,11 +23,10 @@ export default class Detail extends React.Component {
     this.state = {};
   }
   render() {
-    const {movieMsg} = this.props.navigation.state.params;
     return (
       <SafeAreaView style={styles.contaner}>
-        <View>
-          <Text>{movieMsg.nm}</Text>
+        <View style={styles.contaner}>
+          <Text>搜索</Text>
         </View>
       </SafeAreaView>
     );
@@ -37,12 +36,5 @@ const styles = StyleSheet.create({
   contaner: {
     backgroundColor: '#fff',
     flex: 1,
-  },
-  test: {
-    width: 150,
-    height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0f0',
   },
 });
