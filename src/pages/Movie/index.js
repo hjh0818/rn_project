@@ -8,6 +8,7 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  SectionList,
 } from 'react-native';
 import {SafeAreaView} from 'react-navigation';
 import MovieAPI from '../../api/movie.js';
@@ -20,17 +21,25 @@ export default class Movie extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      movieList: [], //电影列表
+      movieList: [], //已上映电影列表
       movieIds: [], //最新电影列表id
       getMore: true, //是否请求更多最新电影列表
       showTitle: 'hit', //显示正在热映/即将上映
       showHeader: true, //是否显示打开猫眼App
+      comingMovieList: [], //即将上映电影列表
+      comingMovieIds: [], //即将上映电影列表ID
+      expectedMovieList: [], //即将上映受期待电影列表
+      offset: 0, //第几次受期待电影 10备注
+      total: 0, //受期待电影数量
+      hasMore: true, //是否还有受期待电影数量
     };
   }
-  componentDidMount() {
-    this.getMovieListAction();
+  componentWillMount() {
+    this.state.showTitle === 'hit'
+      ? this.getMovieListAction()
+      : this.getComingAndExpectedList();
   }
-  // 获取电影列表数据
+  // 获取已上映电影列表数据
   async getMovieListAction() {
     const res = await MovieAPI.getMovieOnInfoList({token: ''});
     this.setState({
@@ -38,8 +47,67 @@ export default class Movie extends React.Component {
       movieIds: res.movieIds,
     });
   }
+  // 获取即将上映电影
+  getComingAndExpectedList() {
+    this.getComingList();
+    this.getMostExpectedList();
+  }
+  // 获取即将上映受期待电影列表数据
+  async getMostExpectedList() {
+    const {coming, paging} = await MovieAPI.getMostExpectedList({
+      ci: 30,
+      limit: 10,
+      offset: 0,
+      token: '',
+    });
+    this.setState({
+      expectedMovieList: coming,
+      offset: paging.offset,
+      total: paging.total,
+    });
+  }
+  // 获取即将上映电影列表数据
+  async getComingList() {
+    const {coming, movieIds} = await MovieAPI.getComingList({
+      ci: 30,
+      token: '',
+      limit: 10,
+    });
+    let list = [];
+    // 数据格式化处理
+    coming.forEach(item => {
+      if (list.length) {
+        for (let i = 0; i < list.length; i++) {
+          if (list[i].title === item.comingTitle) {
+            list[i].data.push(item);
+            return;
+          } else if (i === list.length - 1) {
+            list.push({
+              title: item.comingTitle,
+              data: [item],
+            });
+          }
+        }
+      } else if (list.length === 0) {
+        list.push({
+          title: item.comingTitle,
+          data: [item],
+        });
+      }
+    });
+    this.setState({
+      comingMovieList: list,
+      comingMovieIds: movieIds,
+    });
+  }
   render() {
-    const {movieList, showTitle, showHeader} = this.state;
+    const {
+      movieList,
+      showTitle,
+      showHeader,
+      comingMovieList,
+      expectedMovieList,
+    } = this.state;
     return (
       <SafeAreaView style={styles.contaner}>
         <View style={styles.contaner}>
@@ -93,9 +161,12 @@ export default class Movie extends React.Component {
                   showTitle === 'release' ? styles.active : '',
                 ]}
                 onPress={() =>
-                  this.setState({
-                    showTitle: 'release',
-                  })
+                  this.setState(
+                    {
+                      showTitle: 'release',
+                    },
+                    this.getComingAndExpectedList,
+                  )
                 }>
                 即将上映
               </Text>
@@ -113,9 +184,12 @@ export default class Movie extends React.Component {
             </TouchableOpacity>
           </View>
           {showTitle === 'hit' ? (
-            <ScrollView onScroll={this.scrollAction.bind(this)}>
+            <ScrollView
+              onScroll={this.scrollHitAction.bind(this)}
+              showsVerticalScrollIndicator={false}>
               <FlatList
                 data={movieList}
+                showsHorizontalScrollIndicator={false}
                 renderItem={({item}) => (
                   <TouchableOpacity
                     activeOpacity={1}
@@ -140,7 +214,7 @@ export default class Movie extends React.Component {
                           ) : (
                             <View style={styles.flex}>
                               <Text style={styles.wishLeft}>{item.wish}</Text>
-                              <Text style={styles.pointLeft}>想看</Text>
+                              <Text style={styles.pointLeft}>人想看</Text>
                             </View>
                           )}
                           <Text
@@ -149,7 +223,7 @@ export default class Movie extends React.Component {
                             ellipsizeMode="tail">
                             主演：{item.star}
                           </Text>
-                          <Text style={styles.showInfo} numberOfLines={18}>
+                          <Text style={styles.showInfo} numberOfLines={1}>
                             {item.showInfo}
                           </Text>
                         </View>
@@ -169,7 +243,130 @@ export default class Movie extends React.Component {
             </ScrollView>
           ) : (
             <View>
-              <Text>即将上映</Text>
+              <ScrollView
+                onScroll={this.scrollComingAction.bind(this)}
+                showsVerticalScrollIndicator={false}>
+                <View style={styles.releaseTop}>
+                  <Text style={styles.topTitle}>近期最受期待</Text>
+                  <ScrollView
+                    onScroll={this.scrollExpectedAction.bind(this)}
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}>
+                    <FlatList
+                      data={expectedMovieList}
+                      horizontal={true}
+                      showsHorizontalScrollIndicator={false}
+                      renderItem={({item}) => (
+                        <TouchableOpacity
+                          activeOpacity={1}
+                          onPress={() =>
+                            this.props.navigation.navigate('Detail', {
+                              movieMsg: item,
+                            })
+                          }>
+                          <View style={styles.releaseListItem}>
+                            <View style={styles.imageBox}>
+                              <Image
+                                source={{
+                                  uri: item.img.replace('/w.h', ''),
+                                }}
+                                style={styles.releaseItemImage}
+                              />
+                              <View style={styles.iconBox}>
+                                <ImageBackground
+                                  style={styles.wishIcon}
+                                  source={{
+                                    uri:
+                                      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAoCAYAAACFFRgXAAAABGdBTUEAALGPC/xhBQAAAytJREFUWAnVmLtrFFEUh3cWFAtRE5FEEUREsFAkooUIgl3+CUEU7LVR1LBIMERCLFLZRG1CrFJYpLBQENRGC4n4wBeKRUQ2PlAQX+v3m70z7MzemZ3HZp05cPbce86553w7O7Mzc51KjDQaDYfwDvSAseux69Cv6Ef0LXoHXXAc5y82UqhVJbgLPYhuQTega9DPaB19ht6VpVYDaxUBWYUGewkcQzdbE4LOJabXaHQ76G7OqHWI0RG0v+mJ/XxPdJpaD2xZbcAUX0XiSXS/bUEH3yPil2imL1Chln6RE+huzVPKffJV60frugAwDfoI1tBtrUkpx4vknzVrLmAHU65vTX/F5DzQnzynDwzsCpwX0e1eMIfV+S3ReZpXXlDgFNC/VEgXgifHGXQDVvUE2g1Y1RKT2FxxgTm6cg4bXxHNsGH0j/DhIlKGmFzGKuSbCAyFgkWcDsG6UaeE/m/LIvsEvKcstGIV8ECJgAcErJtFWaRPwCvLQitWAbv3/ZJALwlYj3ZlkbqA9YBRFnkp4HtloRWrgJ+g/uNbgeHF+LTKY5tebWYLDOqhzYpVR1hyE33njor5ITYxNp/WIP/DeBINvI4ooQAipknD6D9eVnC8JjCOxr799vgLiGXcsLmtvVPCnRB4yGDanRTjQ2/PYvIlACwvCTcwM37G/xvMGJYAQRuwoiRex8wFMns7mTMMbV2twMpiwVXMfNuK5XfMm97WTpHAJvsy9pZ15fI41Us9IyUWmG+qPa4ptBe3b/WYMj2zAWsVBfQfPYEGrlbFuiiqPWF6xZaNPcLeSgr9ZjyGLni+LlrVHDM9OpZNBKwqFPyJGUWfa94lUa1RUztRSX9vLVE2SewNrMboaG9NuiYi7w3+M8B+i4hb3amBVQXotRjdxpPsHWtJWLQHfBrYL+FAp3kmYBUFWnu/2u1Mu03wgTXajaxjU0tmYHUCehAj6H7NE4ggBSvoTJL4orNVp/Eifm1eJ/lplXMuD6wYcgGrAAA6H0fQ75pHiGIjJjciJZk7N7DaAKIrvobarnj5aiaHYT7JdQ6HW5sL8Sj+nSb2GHsF2EwXWLi+5v8ArR6xIZ+h44wAAAAASUVORK5CYII=',
+                                  }}
+                                />
+                              </View>
+                              <Text style={styles.wantWish}>
+                                {item.wish}人想看
+                              </Text>
+                            </View>
+                            <Text style={styles.releaseItemName}>
+                              {item.nm}
+                            </Text>
+                            <Text style={styles.releaseItemDate}>
+                              {item.comingTitle.split(/\s+/)[0]}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                      keyExtractor={item => item.id}
+                    />
+                  </ScrollView>
+                </View>
+                <View style={styles.releaseBottom}>
+                  <SectionList
+                    //1数据的获取和渲染
+                    sections={comingMovieList} //分类列表的数据源data
+                    renderItem={({item}) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() =>
+                          this.props.navigation.navigate('Detail', {
+                            movieMsg: item,
+                          })
+                        }>
+                        <View style={styles.listItem}>
+                          <Image
+                            source={{
+                              uri: item.img.replace('/w.h', ''),
+                            }}
+                            style={styles.itemImage}
+                          />
+                          <View style={styles.itemDetail}>
+                            <View style={styles.detailLeft}>
+                              <Text style={styles.itemName}>{item.nm}</Text>
+                              {item.globalReleased ? (
+                                <View style={styles.flex}>
+                                  <Text style={styles.pointLeft}>观众评</Text>
+                                  <Text style={styles.pointRight}>
+                                    {item.sc}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <View style={styles.flex}>
+                                  <Text style={styles.wishLeft}>
+                                    {item.wish}
+                                  </Text>
+                                  <Text style={styles.pointLeft}>人想看</Text>
+                                </View>
+                              )}
+                              <Text
+                                style={styles.showInfo}
+                                numberOfLines={1}
+                                ellipsizeMode="tail">
+                                主演：{item.star}
+                              </Text>
+                              <Text style={styles.showInfo} numberOfLines={1}>
+                                {item.rt + '上映'}
+                              </Text>
+                            </View>
+                            <View style={styles.btnBox}>
+                              {item.showst === 4 ? (
+                                <Text style={styles.advanceBtn}>预售</Text>
+                              ) : (
+                                <Text style={[styles.buyBtn, styles.wantLook]}>
+                                  想看
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    //2渲染分类标题(从数据源中解构出section)
+                    renderSectionHeader={({section}) => (
+                      <View style={styles.sectionListHeader}>
+                        <Text>{section.title}</Text>
+                      </View>
+                    )}
+                  />
+                </View>
+              </ScrollView>
             </View>
           )}
         </View>
@@ -177,7 +374,7 @@ export default class Movie extends React.Component {
     );
   }
   // 正在热映的列表滚动事件
-  scrollAction(event) {
+  scrollHitAction(event) {
     const offsetY = event.nativeEvent.contentOffset.y; //滑动距离
     const {showHeader, movieList, getMore} = this.state;
     if (offsetY > 100 && showHeader) {
@@ -198,7 +395,7 @@ export default class Movie extends React.Component {
       );
     }
   }
-  // 获取电影列表数据
+  // 获取更多上映电影列表数据
   async getMoreComingList() {
     const {movieList, movieIds} = this.state;
     let idsList = [];
@@ -218,6 +415,108 @@ export default class Movie extends React.Component {
     this.setState({
       movieList: movieList.concat(res.coming),
       getMore: true,
+    });
+  }
+  // 即将上映的列表滚动事件
+  scrollComingAction(event) {
+    const offsetY = event.nativeEvent.contentOffset.y; //滑动距离
+    const {showHeader, movieList, getMore} = this.state;
+    if (offsetY > 100 && showHeader) {
+      this.setState({
+        showHeader: false,
+      });
+    } else if (offsetY < 100 && !showHeader) {
+      this.setState({
+        showHeader: true,
+      });
+    }
+    if (offsetY > (movieList.length - 5) * 114 && getMore) {
+      this.setState(
+        {
+          getMore: false,
+        },
+        this.getMoreWillComingList,
+      );
+    }
+  }
+  // 获取更多即将电影列表数据
+  async getMoreWillComingList() {
+    const {comingMovieList, comingMovieIds} = this.state;
+    let idsList = [];
+    const idList = comingMovieIds.slice(
+      comingMovieIds.indexOf(
+        comingMovieList[comingMovieList.length - 1].data[
+          comingMovieList[comingMovieList.length - 1].data.length - 1
+        ].id,
+      ) + 1,
+    );
+    // 大于11条，则一次请求11条
+    if (idList.length > 11) {
+      idsList = idList.slice(0, 11);
+    } else {
+      idsList = idList;
+    }
+    const {coming} = await MovieAPI.getMoreComingList({
+      ci: 30,
+      token: '',
+      limit: 10,
+      movieIds: idsList,
+    });
+    let list = [];
+    // 数据格式化处理
+    coming.forEach(item => {
+      if (list.length) {
+        for (let i = 0; i < list.length; i++) {
+          if (list[i].title === item.comingTitle) {
+            list[i].data.push(item);
+            return;
+          } else if (i === list.length - 1) {
+            list.push({
+              title: item.comingTitle,
+              data: [item],
+            });
+          }
+        }
+      } else if (list.length === 0) {
+        list.push({
+          title: item.comingTitle,
+          data: [item],
+        });
+      }
+    });
+    this.setState({
+      comingMovieList: comingMovieList.concat(list),
+      getMore: true,
+    });
+  }
+  // 受欢迎即将上映的列表滚动事件
+  scrollExpectedAction(event) {
+    const offsetX = event.nativeEvent.contentOffset.x; //滑动距离
+    const {expectedMovieList, getMore, hasMore} = this.state;
+    console.log(offsetX);
+    if (offsetX > (expectedMovieList.length - 5) * 100 && getMore && hasMore) {
+      this.setState(
+        {
+          getMore: false,
+        },
+        this.getMoreExpectedList,
+      );
+    }
+  }
+  // 获取更多受欢迎的电影
+  async getMoreExpectedList() {
+    const {offset, expectedMovieList} = this.state;
+    const {coming, paging} = await MovieAPI.getMostExpected({
+      ci: 30,
+      limit: 10,
+      offset: offset + 10,
+      token: '',
+    });
+    this.setState({
+      expectedMovieList: expectedMovieList.concat(coming),
+      offset: paging.offset,
+      total: paging.total,
+      hasMore: paging.hasMore,
     });
   }
 }
@@ -413,5 +712,77 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     marginTop: 11,
+  },
+  releaseTop: {
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingBottom: 12,
+  },
+  topTitle: {
+    fontSize: 12,
+    lineHeight: 38,
+    color: '#333',
+  },
+  releaseListItem: {
+    display: 'flex',
+    marginRight: 10,
+  },
+  imageBox: {
+    position: 'relative',
+  },
+  iconBox: {
+    position: 'absolute',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    top: 0,
+    left: 0,
+    width: 28,
+    height: 28,
+    lineHeight: 28,
+    borderBottomRightRadius: 10,
+    backgroundColor: '#777',
+    opacity: 0.7,
+  },
+  wishIcon: {
+    width: 14,
+    height: 13,
+    backgroundColor: '#777',
+  },
+  releaseItemImage: {
+    width: 85,
+    height: 115,
+  },
+  wantWish: {
+    position: 'absolute',
+    left: 4,
+    bottom: 2,
+    color: '#faaf00',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  releaseItemName: {
+    fontSize: 13,
+    color: '#222',
+    marginBottom: 3,
+    marginTop: 5,
+  },
+  releaseItemDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  releaseBottom: {
+    paddingRight: 12,
+    borderTopWidth: 10,
+    borderColor: '#f5f5f5',
+  },
+  wantLook: {
+    backgroundColor: '#faaf00',
+  },
+  sectionListHeader: {
+    paddingLeft: 12,
+    paddingTop: 15,
+    fontSize: 14,
+    color: '#333',
   },
 });
