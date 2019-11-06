@@ -13,8 +13,10 @@ import {
 import {SafeAreaView} from 'react-navigation';
 import MovieAPI from '../../api/movie.js';
 import Header from '../../components/header.js';
+import {connect} from 'react-redux';
+import {change} from '../../redux/actions/city.js';
 
-export default class Movie extends React.Component {
+class Movie extends React.Component {
   static navigationOptions = {
     title: '电影',
   };
@@ -55,7 +57,7 @@ export default class Movie extends React.Component {
   // 获取即将上映受期待电影列表数据
   async getMostExpectedList() {
     const {coming, paging} = await MovieAPI.getMostExpectedList({
-      ci: 30,
+      ci: this.props.city,
       limit: 10,
       offset: 0,
       token: '',
@@ -69,7 +71,7 @@ export default class Movie extends React.Component {
   // 获取即将上映电影列表数据
   async getComingList() {
     const {coming, movieIds} = await MovieAPI.getComingList({
-      ci: 30,
+      ci: this.props.city,
       token: '',
       limit: 10,
     });
@@ -457,7 +459,7 @@ export default class Movie extends React.Component {
       idsList = idList;
     }
     const {coming} = await MovieAPI.getMoreComingList({
-      ci: 30,
+      ci: this.props.city,
       token: '',
       limit: 10,
       movieIds: idsList,
@@ -507,7 +509,7 @@ export default class Movie extends React.Component {
   async getMoreExpectedList() {
     const {offset, expectedMovieList} = this.state;
     const {coming, paging} = await MovieAPI.getMostExpected({
-      ci: 30,
+      ci: this.props.city,
       limit: 10,
       offset: offset + 10,
       token: '',
@@ -785,4 +787,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  addBtn: {
+    fontSize: 26,
+    color: 'red',
+  },
+  decreaseBtn: {
+    fontSize: 26,
+    color: '#459AFF',
+  },
 });
+
+// connect将store的值和action的预处理数据引入
+export default connect(
+  state => ({
+    city: state.city.city,
+  }),
+  dispatch => ({
+    changeCity: () => dispatch(change),
+  }),
+)(Movie);
