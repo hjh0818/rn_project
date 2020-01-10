@@ -1,32 +1,25 @@
 import React from 'react';
 import {Text, StyleSheet, View} from 'react-native';
 import {SafeAreaView} from 'react-navigation';
-const rightStyle = {
-  height: 44,
-  width: 55,
-  justifyContent: 'center',
-  paddingRight: 15,
-};
 export default class LocalCity extends React.Component {
   static navigationOptions = {
-    title: '城市定位',
-    headerTitleStyle: {
-      flex: 1,
-      textAlign: 'center',
-    },
-    headerStyle: {backgroundColor: '#e54847'},
-    headerTintColor: '#fff',
-    headerRight: <View style={rightStyle} />,
+    header: null,
   };
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      btnName: '深圳',
+    };
   }
   render() {
+    const {btnName} = this.state;
     return (
       <SafeAreaView style={styles.contaner}>
         <View style={styles.contaner}>
-          <Text>定位</Text>
+          <Text style={styles.title}>定位城市</Text>
+          <View style={styles.localBox}>
+            <Text style={styles.localBtn}>{btnName}</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -34,7 +27,29 @@ export default class LocalCity extends React.Component {
 }
 const styles = StyleSheet.create({
   contaner: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ebebeb',
     flex: 1,
+  },
+  title: {
+    paddingLeft: 15,
+    lineHeight: 30,
+    fontSize: 14,
+    color: '#333',
+  },
+  localBox: {
+    backgroundColor: '#f5f5f5',
+    marginRight: 30,
+    paddingBottom: 8,
+    paddingLeft: 15,
+  },
+  localBtn: {
+    paddingLeft: 20,
+    marginTop: 15,
+    paddingRight: 20,
+    backgroundColor: '#fff',
+    color: '#333',
+    fontSize: 14,
+    lineHeight: 30,
+    maxWidth: 100,
   },
 });
