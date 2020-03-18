@@ -24,21 +24,48 @@ class Cinema extends React.Component {
       hasMore: true, //是否还有更多影院列表
     };
   }
-  componentWillMount() {
+  componentDidMount() {
     this.getCinemaList();
   }
   async getCinemaList() {
+    const day = this.getDate();
     const res = await cinemaAPI.getCinemaList({
-      day: '',
+      day,
       offset: 0,
       limit: 20,
+      districtId: -1,
+      lineId: -1,
+      hallType: -1,
+      brandId: -1,
+      serviceId: -1,
+      areaId: -1,
+      stationId: -1,
+      item: '',
+      updateShowDay: true,
+      reqId: 1584411877778,
       cityId: this.props.city,
+      optimus_uuid:
+        '05B55920F5FE11E9A687F115DD6A6384A18A3A61E99942A49CC57A22D9E4790B',
+      optimus_risk_level: 71,
+      optimus_code: 10,
     });
-    console.log(res);
     this.setState({
       cinameList: res.cinemas,
       hasMore: res.paging.hasMore,
     });
+  }
+  getDate() {
+    const date = new Date();
+    const year = date.getFullYear().toString();
+    let month = (date.getMonth() + 1).toString();
+    let day = date.getDate().toString();
+    if (month < 10) {
+      month = '0' + month;
+    }
+    if (day < 10) {
+      day = '0' + day;
+    }
+    return year + '-' + month + '-' + day;
   }
   render() {
     const {cinameList} = this.state;

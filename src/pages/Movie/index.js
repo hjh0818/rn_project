@@ -4,11 +4,10 @@ import {
   Text,
   StyleSheet,
   View,
-  FlatList,
   Image,
   TouchableOpacity,
   ScrollView,
-  SectionList,
+  // SectionList,
 } from 'react-native';
 import {SafeAreaView} from 'react-navigation';
 import MovieAPI from '../../api/movie.js';
@@ -36,10 +35,14 @@ class Movie extends React.Component {
       hasMore: true, //是否还有受期待电影数量
     };
   }
-  componentWillMount() {
+  componentDidMount() {
     this.state.showTitle === 'hit'
-      ? this.getMovieListAction()
+      ? this.getOnMovieListAction()
       : this.getComingAndExpectedList();
+  }
+  getOnMovieListAction() {
+    this.getMostExpectedList();
+    this.getMovieListAction();
   }
   // 获取已上映电影列表数据
   async getMovieListAction() {
@@ -79,17 +82,19 @@ class Movie extends React.Component {
     // 数据格式化处理
     coming.forEach(item => {
       if (list.length) {
-        for (let i = 0; i < list.length; i++) {
-          if (list[i].title === item.comingTitle) {
-            list[i].data.push(item);
-            return;
-          } else if (i === list.length - 1) {
+        list.forEach((listItem, index) => {
+          if (listItem.title === item.comingTitle) {
+            list[index].data.push(item);
+          } else if (
+            index === list.length - 1 &&
+            listItem.title !== item.comingTitle
+          ) {
             list.push({
               title: item.comingTitle,
               data: [item],
             });
           }
-        }
+        });
       } else if (list.length === 0) {
         list.push({
           title: item.comingTitle,
@@ -188,65 +193,115 @@ class Movie extends React.Component {
           {showTitle === 'hit' ? (
             <ScrollView
               onScroll={this.scrollHitAction.bind(this)}
+              horizontal={false}
               showsVerticalScrollIndicator={false}>
-              <FlatList
-                data={movieList}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({item}) => (
-                  <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={() =>
-                      this.props.navigation.navigate('Detail', {movieMsg: item})
-                    }>
-                    <View style={styles.listItem}>
-                      <Image
-                        source={{
-                          uri: item.img.replace('/w.h', ''),
-                        }}
-                        style={styles.itemImage}
-                      />
-                      <View style={styles.itemDetail}>
-                        <View style={styles.detailLeft}>
-                          <Text style={styles.itemName}>{item.nm}</Text>
-                          {item.globalReleased ? (
-                            <View style={styles.flex}>
-                              <Text style={styles.pointLeft}>观众评</Text>
-                              <Text style={styles.pointRight}>{item.sc}</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.flex}>
-                              <Text style={styles.wishLeft}>{item.wish}</Text>
-                              <Text style={styles.pointLeft}>人想看</Text>
-                            </View>
-                          )}
+              <View style={styles.releaseTop}>
+                <Text style={styles.topTitle}>最受好评电影</Text>
+                <ScrollView
+                  onScroll={this.scrollExpectedAction.bind(this)}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}>
+                  {expectedMovieList.map((item, index) => {
+                    return (
+                      <TouchableOpacity
+                        key={index + 'expected' + item}
+                        activeOpacity={1}
+                        onPress={() =>
+                          this.props.navigation.navigate('Detail', {
+                            movieMsg: item,
+                          })
+                        }>
+                        <View style={styles.releaseListItem}>
+                          <View style={styles.imageBox}>
+                            <Image
+                              source={{
+                                uri: item.img.replace('/w.h', ''),
+                              }}
+                              style={styles.releaseItemImage}
+                            />
+                            <Text style={styles.wantWish}>
+                              {item.wish}人想看
+                            </Text>
+                          </View>
                           <Text
-                            style={styles.showInfo}
-                            numberOfLines={1}
-                            ellipsizeMode="tail">
-                            主演：{item.star}
-                          </Text>
-                          <Text style={styles.showInfo} numberOfLines={1}>
-                            {item.showInfo}
+                            style={styles.releaseItemName}
+                            numberOfLines={1}>
+                            {item.nm}
                           </Text>
                         </View>
-                        <View style={styles.btnBox}>
-                          {item.globalReleased ? (
-                            <Text style={styles.buyBtn}>购票</Text>
-                          ) : (
-                            <Text style={styles.advanceBtn}>预售</Text>
-                          )}
-                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <View />
+                </ScrollView>
+              </View>
+              <View style={styles.brBottom} />
+              {movieList.map(item => {
+                return (
+                  <View style={styles.listItem} key={item.id + 'movie'}>
+                    <Image
+                      source={{
+                        uri: item.img.replace('/w.h', ''),
+                      }}
+                      style={styles.itemImage}
+                    />
+                    <View style={styles.itemDetail}>
+                      <View style={styles.detailLeft}>
+                        <Text style={styles.itemName}>{item.nm}</Text>
+                        {item.globalReleased ? (
+                          <View style={styles.flex}>
+                            <Text style={styles.pointLeft}>观众评</Text>
+                            <Text style={styles.pointRight}>{item.sc}</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.flex}>
+                            <Text style={styles.wishLeft}>{item.wish}</Text>
+                            <Text style={styles.pointLeft}>人想看</Text>
+                          </View>
+                        )}
+                        <Text
+                          style={styles.showInfo}
+                          numberOfLines={1}
+                          ellipsizeMode="tail">
+                          主演：{item.star}
+                        </Text>
+                        <Text style={styles.showInfo} numberOfLines={1}>
+                          {item.showInfo}
+                        </Text>
+                      </View>
+                      <View style={styles.btnBox}>
+                        {item.globalReleased ? (
+                          <Text style={styles.buyBtn}>购票</Text>
+                        ) : (
+                          <Text style={styles.advanceBtn}>预售</Text>
+                        )}
                       </View>
                     </View>
-                  </TouchableOpacity>
-                )}
-                keyExtractor={item => item.id}
-              />
+                  </View>
+                );
+              })}
+              <View style={styles.brBottom} />
+              <View style={styles.releaseTop}>
+                <Text style={styles.topTitle}>热门影人</Text>
+                {expectedMovieList.map(item => {
+                  <TouchableOpacity
+                    key={item.id + 'expected'}
+                    activeOpacity={1}
+                    onPress={() =>
+                      this.props.navigation.navigate('Detail', {
+                        movieMsg: item,
+                      })
+                    }>
+                    <View style={styles.releaseListItem} />
+                  </TouchableOpacity>;
+                })}
+              </View>
             </ScrollView>
           ) : (
             <View>
               <ScrollView
                 onScroll={this.scrollComingAction.bind(this)}
+                horizontal={false}
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.releaseTop}>
                   <Text style={styles.topTitle}>近期最受期待</Text>
@@ -254,12 +309,10 @@ class Movie extends React.Component {
                     onScroll={this.scrollExpectedAction.bind(this)}
                     horizontal={true}
                     showsHorizontalScrollIndicator={false}>
-                    <FlatList
-                      data={expectedMovieList}
-                      horizontal={true}
-                      showsHorizontalScrollIndicator={false}
-                      renderItem={({item}) => (
+                    {expectedMovieList.map((item, index) => {
+                      return (
                         <TouchableOpacity
+                          key={item + 'expectedMovie' + index}
                           activeOpacity={1}
                           onPress={() =>
                             this.props.navigation.navigate('Detail', {
@@ -287,7 +340,9 @@ class Movie extends React.Component {
                                 {item.wish}人想看
                               </Text>
                             </View>
-                            <Text style={styles.releaseItemName}>
+                            <Text
+                              style={styles.releaseItemName}
+                              numberOfLines={1}>
                               {item.nm}
                             </Text>
                             <Text style={styles.releaseItemDate}>
@@ -295,13 +350,95 @@ class Movie extends React.Component {
                             </Text>
                           </View>
                         </TouchableOpacity>
-                      )}
-                      keyExtractor={item => item.id}
-                    />
+                      );
+                    })}
                   </ScrollView>
                 </View>
                 <View style={styles.releaseBottom}>
-                  <SectionList
+                  {comingMovieList.map((item, index) => {
+                    return (
+                      <View key={item + 'coming' + index}>
+                        <Text style={styles.titleStyle}>{item.title}</Text>
+                        {item.data.map((dataItem, dataIndex) => {
+                          return (
+                            <TouchableOpacity
+                              key={dataItem + 'comingMovie' + dataIndex}
+                              activeOpacity={1}
+                              onPress={() =>
+                                this.props.navigation.navigate('Detail', {
+                                  movieMsg: dataItem,
+                                })
+                              }>
+                              <View style={styles.listItem}>
+                                <Image
+                                  source={{
+                                    uri: dataItem.img.replace('/w.h', ''),
+                                  }}
+                                  style={styles.itemImage}
+                                />
+                                <View style={styles.itemDetail}>
+                                  <View style={styles.detailLeft}>
+                                    <Text
+                                      style={styles.itemName}
+                                      numberOfLines={1}>
+                                      {dataItem.nm}
+                                    </Text>
+                                    {dataItem.globalReleased ? (
+                                      <View style={styles.flex}>
+                                        <Text style={styles.pointLeft}>
+                                          观众评
+                                        </Text>
+                                        <Text style={styles.pointRight}>
+                                          {dataItem.sc}
+                                        </Text>
+                                      </View>
+                                    ) : (
+                                      <View style={styles.flex}>
+                                        <Text style={styles.wishLeft}>
+                                          {dataItem.wish}
+                                        </Text>
+                                        <Text style={styles.pointLeft}>
+                                          人想看
+                                        </Text>
+                                      </View>
+                                    )}
+                                    <Text
+                                      style={styles.showInfo}
+                                      numberOfLines={1}
+                                      ellipsizeMode="tail">
+                                      主演：{dataItem.star}
+                                    </Text>
+                                    <Text
+                                      style={styles.showInfo}
+                                      numberOfLines={1}>
+                                      {dataItem.rt + '上映'}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.btnBox}>
+                                    {dataItem.showst === 4 ? (
+                                      <Text style={styles.advanceBtn}>
+                                        预售
+                                      </Text>
+                                    ) : (
+                                      <Text
+                                        style={[
+                                          styles.buyBtn,
+                                          styles.wantLook,
+                                        ]}>
+                                        想看
+                                      </Text>
+                                    )}
+                                  </View>
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    );
+                  })}
+                  <View />
+                  {/* <SectionList
                     //1数据的获取和渲染
                     sections={comingMovieList} //分类列表的数据源data
                     renderItem={({item}) => (
@@ -321,7 +458,9 @@ class Movie extends React.Component {
                           />
                           <View style={styles.itemDetail}>
                             <View style={styles.detailLeft}>
-                              <Text style={styles.itemName}>{item.nm}</Text>
+                              <Text style={styles.itemName} numberOfLines={1}>
+                                {item.nm}
+                              </Text>
                               {item.globalReleased ? (
                                 <View style={styles.flex}>
                                   <Text style={styles.pointLeft}>观众评</Text>
@@ -366,7 +505,7 @@ class Movie extends React.Component {
                         <Text>{section.title}</Text>
                       </View>
                     )}
-                  />
+                  /> */}
                 </View>
               </ScrollView>
             </View>
@@ -468,17 +607,19 @@ class Movie extends React.Component {
     // 数据格式化处理
     coming.forEach(item => {
       if (list.length) {
-        for (let i = 0; i < list.length; i++) {
-          if (list[i].title === item.comingTitle) {
-            list[i].data.push(item);
-            return;
-          } else if (i === list.length - 1) {
+        list.forEach((listItem, index) => {
+          if (listItem.title === item.comingTitle) {
+            list[index].data.push(item);
+          } else if (
+            index === list.length - 1 &&
+            listItem.title !== item.comingTitle
+          ) {
             list.push({
               title: item.comingTitle,
               data: [item],
             });
           }
-        }
+        });
       } else if (list.length === 0) {
         list.push({
           title: item.comingTitle,
@@ -495,7 +636,6 @@ class Movie extends React.Component {
   scrollExpectedAction(event) {
     const offsetX = event.nativeEvent.contentOffset.x; //滑动距离
     const {expectedMovieList, getMore, hasMore} = this.state;
-    console.log(offsetX);
     if (offsetX > (expectedMovieList.length - 5) * 100 && getMore && hasMore) {
       this.setState(
         {
@@ -597,6 +737,7 @@ const styles = StyleSheet.create({
     paddingRight: 5,
   },
   itemName: {
+    width: 150,
     fontSize: 17,
     lineHeight: 24,
     fontWeight: '700',
@@ -764,6 +905,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   releaseItemName: {
+    width: 100,
     fontSize: 13,
     color: '#222',
     marginBottom: 3,
@@ -794,6 +936,15 @@ const styles = StyleSheet.create({
   decreaseBtn: {
     fontSize: 26,
     color: '#459AFF',
+  },
+  brBottom: {
+    height: 10,
+    backgroundColor: '#f5f5f5',
+  },
+  titleStyle: {
+    paddingLeft: 15,
+    height: 30,
+    lineHeight: 30,
   },
 });
 
